@@ -61,7 +61,7 @@ project-root/
 - Uvicorn
 - A laptop webcam, USB webcam, or RTSP camera
 
-VisionFlow currently uses a Caffe-based face detection model. OpenCV 5 removed the Caffe and Darknet DNN loaders, so the project intentionally pins `opencv-python` to version 4.x until the face detection model is migrated to ONNX. citehttps://github.com/opencv/opencv/wiki/OpenCV-4-to-5-migration
+VisionFlow currently uses a Caffe-based face detection model. OpenCV 5 removed the Caffe and Darknet DNN loaders, so the project intentionally pins `opencv-python` to version 4.x until the face detection model is migrated to ONNX.
 
 Create a virtual environment and install dependencies:
 
