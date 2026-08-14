@@ -4,7 +4,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
-from app.camera.manager import CameraManager, CameraType, camera_manager
+from app.camera.manager import CameraType, camera_manager
 
 DEFAULT_RTSP_URL = "rtsp://10.208.88.36:8554/cam"
 
@@ -58,6 +58,13 @@ def frame_stream(camera_id: str):
         session.stop()
 
 
+def get_or_create_legacy(camera_id: str, **kwargs):
+    session = camera_manager.get(camera_id)
+    if session is None:
+        session = camera_manager.add(camera_id=camera_id, **kwargs)
+    return session
+
+
 @app.get("/")
 def root():
     return {
@@ -84,7 +91,9 @@ def create_camera(payload: CameraCreate):
         if device_index < 0:
             raise HTTPException(status_code=400, detail="Webcam device index tidak boleh negatif")
 
-    session = camera_manager.add(**payload.model_dump())
+    data = payload.model_dump()
+    camera_type = data.pop("type")
+    session = camera_manager.add(camera_type=camera_type, **data)
     return session.snapshot()
 
 
@@ -156,70 +165,57 @@ def camera_stream(camera_id: str):
 
 @app.get("/webcam_feed")
 def webcam_feed(device: int = 0):
-    camera_id = "legacy-webcam"
-    session = camera_manager.get(camera_id)
-    if session is None:
-        session = camera_manager.add(
-            name=f"Webcam {device}",
-            camera_type="webcam",
-            source=str(device),
-        )
-        session.config.id = camera_id
-        camera_manager._sessions[camera_id] = camera_manager._sessions.pop(session.config.id, session)
+    get_or_create_legacy(
+        f"legacy-webcam-{device}",
+        name=f"Webcam {device}",
+        camera_type="webcam",
+        source=str(device),
+    )
     return StreamingResponse(
-        frame_stream(camera_id),
+        frame_stream(f"legacy-webcam-{device}"),
         media_type="multipart/x-mixed-replace; boundary=frame",
     )
 
 
 @app.get("/webcam_feed_faces")
 def webcam_feed_faces(device: int = 0):
-    camera_id = f"legacy-webcam-face-{device}"
-    session = camera_manager.get(camera_id)
-    if session is None:
-        session = camera_manager.add(
-            name=f"Webcam {device} Face Detection",
-            camera_type="webcam",
-            source=str(device),
-            face_detection=True,
-        )
-        camera_manager._sessions[camera_id] = camera_manager._sessions.pop(session.config.id, session)
+    get_or_create_legacy(
+        f"legacy-webcam-face-{device}",
+        name=f"Webcam {device} Face Detection",
+        camera_type="webcam",
+        source=str(device),
+        face_detection=True,
+    )
     return StreamingResponse(
-        frame_stream(camera_id),
+        frame_stream(f"legacy-webcam-face-{device}"),
         media_type="multipart/x-mixed-replace; boundary=frame",
     )
 
 
 @app.get("/video_feed")
 def video_feed():
-    camera_id = "legacy-rtsp"
-    session = camera_manager.get(camera_id)
-    if session is None:
-        session = camera_manager.add(
-            name="Default RTSP Camera",
-            camera_type="rtsp",
-            source=DEFAULT_RTSP_URL,
-        )
-        camera_manager._sessions[camera_id] = camera_manager._sessions.pop(session.config.id, session)
+    get_or_create_legacy(
+        "legacy-rtsp",
+        name="Default RTSP Camera",
+        camera_type="rtsp",
+        source=DEFAULT_RTSP_URL,
+    )
     return StreamingResponse(
-        frame_stream(camera_id),
+        frame_stream("legacy-rtsp"),
         media_type="multipart/x-mixed-replace; boundary=frame",
     )
 
 
 @app.get("/video_feed_faces")
 def video_feed_faces():
-    camera_id = "legacy-rtsp-face"
-    session = camera_manager.get(camera_id)
-    if session is None:
-        session = camera_manager.add(
-            name="Default RTSP Face Detection",
-            camera_type="rtsp",
-            source=DEFAULT_RTSP_URL,
-            face_detection=True,
-        )
-        camera_manager._sessions[camera_id] = camera_manager._sessions.pop(session.config.id, session)
+    get_or_create_legacy(
+        "legacy-rtsp-face",
+        name="Default RTSP Face Detection",
+        camera_type="rtsp",
+        source=DEFAULT_RTSP_URL,
+        face_detection=True,
+    )
     return StreamingResponse(
-        frame_stream(camera_id),
+        frame_stream("legacy-rtsp-face"),
         media_type="multipart/x-mixed-replace; boundary=frame",
     )
