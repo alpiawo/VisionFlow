@@ -47,7 +47,7 @@ project-root/
 │       ├── __init__.py
 │       └── camera.py
 ├── assets/
-│   └── banner.svg
+│   └── vision-flow.png
 ├── models/
 ├── requirements.txt
 └── README.md
@@ -56,10 +56,12 @@ project-root/
 ## Requirements
 
 - Python 3.9+
-- OpenCV
+- OpenCV 4.x
 - FastAPI
 - Uvicorn
 - A laptop webcam, USB webcam, or RTSP camera
+
+VisionFlow currently uses a Caffe-based face detection model. OpenCV 5 removed the Caffe and Darknet DNN loaders, so the project intentionally pins `opencv-python` to version 4.x until the face detection model is migrated to ONNX. citehttps://github.com/opencv/opencv/wiki/OpenCV-4-to-5-migration
 
 Create a virtual environment and install dependencies:
 
@@ -82,6 +84,21 @@ source venv/bin/activate
 ```bash
 pip install -r requirements.txt
 ```
+
+If you already created the virtual environment before the OpenCV version constraint was added, reinstall OpenCV inside the active virtual environment:
+
+```bash
+python -m pip uninstall -y opencv-python opencv-contrib-python
+python -m pip install "opencv-python>=4.10,<5"
+```
+
+Verify the installed version:
+
+```bash
+python -c "import cv2; print(cv2.__version__)"
+```
+
+The version should start with `4.`.
 
 ## Run
 
@@ -208,6 +225,7 @@ The camera manager is intentionally independent from the HTTP endpoint. This mak
 - Additional processing pipelines
 - Multi-camera dashboard
 - Authentication and access control
+- Migrate face detection from Caffe to ONNX
 
 ## License
 
