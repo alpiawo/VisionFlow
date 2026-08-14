@@ -1,21 +1,30 @@
 # VisionFlow
 
-VisionFlow is a FastAPI + OpenCV video streaming service that can receive frames from a laptop webcam, an external USB webcam, or an RTSP camera and expose them as browser-compatible MJPEG streams.
+VisionFlow is a FastAPI + OpenCV camera streaming service designed around multiple camera sources, lifecycle management, live MJPEG streaming, and optional real-time processing.
 
 ## Features
 
 - Laptop webcam streaming
 - External USB webcam streaming
 - RTSP camera streaming
+- Webcam discovery
+- Camera source management through REST API
+- Start and stop camera sessions
+- Automatic camera reconnect
+- Camera status and FPS statistics
+- Configurable resolution, FPS, and reconnect delay
 - Optional real-time face detection
-- Configurable webcam device index
 - Browser-compatible MJPEG output
+- Legacy streaming endpoints preserved for compatibility
 
 ## Project Structure
 
 ```text
 project-root/
 ├── app/
+│   ├── camera/
+│   │   ├── __init__.py
+│   │   └── manager.py
 │   ├── rtsp/
 │   │   ├── camera_rtsp.py
 │   │   ├── face_detector.py
@@ -34,7 +43,7 @@ project-root/
 - OpenCV
 - FastAPI
 - Uvicorn
-- A laptop webcam or USB webcam
+- A laptop webcam, USB webcam, or RTSP camera
 
 Create a virtual environment and install dependencies:
 
@@ -64,7 +73,62 @@ pip install -r requirements.txt
 uvicorn app.rtsp.main:app --host 0.0.0.0 --port 8000
 ```
 
-Open the stream in a browser or use it as an MJPEG source:
+Open the API documentation at `/docs` to manage cameras and test endpoints.
+
+## Camera Management API
+
+List configured cameras:
+
+```text
+GET /api/cameras
+```
+
+Discover available local webcams:
+
+```text
+GET /api/cameras/discover
+```
+
+Create a webcam:
+
+```json
+{
+  "name": "Laptop Webcam",
+  "type": "webcam",
+  "source": "0",
+  "width": 1280,
+  "height": 720,
+  "fps": 30,
+  "face_detection": false,
+  "reconnect_delay": 2
+}
+```
+
+Create an RTSP camera:
+
+```json
+{
+  "name": "Warehouse Camera",
+  "type": "rtsp",
+  "source": "rtsp://192.168.1.20:8554/cam",
+  "face_detection": false
+}
+```
+
+The camera API provides:
+
+- `POST /api/cameras` to register a camera
+- `GET /api/cameras` to list cameras
+- `GET /api/cameras/{id}` to inspect a camera
+- `PATCH /api/cameras/{id}` to update configuration
+- `DELETE /api/cameras/{id}` to remove a camera
+- `POST /api/cameras/{id}/start` to start capture
+- `POST /api/cameras/{id}/stop` to stop capture
+- `GET /api/cameras/{id}/stream` to open the MJPEG stream
+
+## Legacy Streaming Endpoints
+
+The original stream URLs remain available:
 
 - Laptop/default webcam: `http://127.0.0.1:8000/webcam_feed?device=0`
 - External webcam: `http://127.0.0.1:8000/webcam_feed?device=1`
@@ -72,14 +136,50 @@ Open the stream in a browser or use it as an MJPEG source:
 - RTSP stream: `http://127.0.0.1:8000/video_feed`
 - RTSP + face detection: `http://127.0.0.1:8000/video_feed_faces`
 
-## Webcam Device Index
+## Camera Lifecycle
 
-OpenCV normally exposes the integrated laptop camera as device `0`. An external USB camera is commonly device `1`, but the actual index depends on the operating system and connected devices.
+Each managed camera has an independent session with these states:
 
-If the external camera is not available at index `1`, try another index such as `2` or `3`.
+```text
+stopped
+   ↓
+starting
+   ↓
+running
+   ↓
+reconnecting
+   ↓
+running
+```
+
+If the camera cannot be opened or a frame read fails, VisionFlow releases the capture, waits for the configured reconnect delay, and attempts to reconnect while the session remains active.
 
 ## Architecture
 
-The webcam is captured directly by OpenCV on the machine running VisionFlow. Frames are encoded as JPEG and continuously returned by FastAPI using `multipart/x-mixed-replace`. This makes the stream directly viewable in a browser without a separate frontend or WebSocket client.
+```text
+Camera Source
+     │
+     ├── Webcam
+     └── RTSP
+     │
+     ▼
+CameraManager
+     │
+     ▼
+CameraSession
+     │
+     ├── Capture lifecycle
+     ├── Reconnect handling
+     ├── FPS statistics
+     └── Processing
+            │
+            └── Face Detection
+     │
+     ▼
+JPEG Encoder
+     │
+     ▼
+FastAPI MJPEG Stream
+```
 
-Face detection can be enabled by using the `_faces` endpoint. The existing OpenCV SSD face detection model in `models/` is reused for this processing pipeline.
+The camera manager is intentionally independent from the HTTP endpoint. This makes it possible to add recording, snapshots, WebSocket telemetry, additional processing pipelines, and a frontend without coupling those features directly to OpenCV capture code.
