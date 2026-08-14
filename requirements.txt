@@ -1,6 +1,6 @@
 fastapi
 uvicorn
-opencv-python
+opencv-python>=4.10,<5
 numpy
 imutils
 python-dotenv

@@ -6,8 +6,6 @@ from typing import Literal
 
 import cv2
 
-from app.rtsp.face_detector import detect_faces
-
 CameraType = Literal["webcam", "rtsp"]
 CameraState = Literal["stopped", "starting", "running", "reconnecting", "error"]
 
@@ -106,6 +104,8 @@ class CameraSession:
                     raise RuntimeError("Camera frame read failed")
 
                 if self.config.face_detection:
+                    from app.rtsp.face_detector import detect_faces
+
                     frame = detect_faces(frame)
 
                 encoded, jpeg = cv2.imencode(
