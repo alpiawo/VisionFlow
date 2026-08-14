@@ -1,85 +1,85 @@
-# RTSP Streaming with Face Detection
+# VisionFlow
 
-This project is a FastAPI + OpenCV based system for real-time RTSP streaming with face detection.
-
----
+VisionFlow is a FastAPI + OpenCV video streaming service that can receive frames from a laptop webcam, an external USB webcam, or an RTSP camera and expose them as browser-compatible MJPEG streams.
 
 ## Features
 
-- Real-time RTSP streaming via OpenCV
-- Face detection using a pre-trained OpenCV model (`res10_300x300_ssd`)
-- FastAPI backend with streaming and control endpoints
-
----
+- Laptop webcam streaming
+- External USB webcam streaming
+- RTSP camera streaming
+- Optional real-time face detection
+- Configurable webcam device index
+- Browser-compatible MJPEG output
 
 ## Project Structure
 
-```
+```text
 project-root/
-│
 ├── app/
-│ ├── rtsp/
-│ │ ├── camera_rtsp.py # RTSP stream handler
-│ │ ├── face_detector.py # Face detection logic
-│ │ └── main.py # FastAPI entry point
-│ └── models/ # ML models (e.g., sleeping detection)
+│   ├── rtsp/
+│   │   ├── camera_rtsp.py
+│   │   ├── face_detector.py
+│   │   └── main.py
+│   └── webcam/
+│       ├── __init__.py
+│       └── camera.py
+├── models/
 ├── requirements.txt
 └── README.md
 ```
 
----
-
 ## Requirements
 
-Make sure the following are installed:
-
 - Python 3.9+
-- FFmpeg (for video handling)
-- Virtual environment (venv) for dependency isolation
+- OpenCV
+- FastAPI
+- Uvicorn
+- A laptop webcam or USB webcam
 
-Check versions:
+Create a virtual environment and install dependencies:
 
 ```bash
-python --version
-```
-
-## Setup Environment
-
-1. Clone the repo
-
-```
-git clone https://github.com/alpiawo/fastStreamCam.git
-cd fastStreamCam
-```
-
-2. Create virtual env
-
-```
 python -m venv venv
 ```
 
-3. Activate virtual env (Windows)
+Windows:
 
-```
+```bash
 venv\Scripts\activate
 ```
 
-4. Install dependencies
+Linux/macOS:
 
+```bash
+source venv/bin/activate
 ```
+
+```bash
 pip install -r requirements.txt
 ```
 
-## Run the Server
+## Run
 
-1. Change your rtsp URL in main.py
-2. Start FastAPI
-
-```
+```bash
 uvicorn app.rtsp.main:app --host 0.0.0.0 --port 8000
 ```
 
-3. Access the web stream:
-   - Base URL: http://127.0.0.1:8000
-   - Stream endpoint: /video_feed
-   - Stream + Face detection endpoint: /video_feed_faces
+Open the stream in a browser or use it as an MJPEG source:
+
+- Laptop/default webcam: `http://127.0.0.1:8000/webcam_feed?device=0`
+- External webcam: `http://127.0.0.1:8000/webcam_feed?device=1`
+- Webcam + face detection: `http://127.0.0.1:8000/webcam_feed_faces?device=0`
+- RTSP stream: `http://127.0.0.1:8000/video_feed`
+- RTSP + face detection: `http://127.0.0.1:8000/video_feed_faces`
+
+## Webcam Device Index
+
+OpenCV normally exposes the integrated laptop camera as device `0`. An external USB camera is commonly device `1`, but the actual index depends on the operating system and connected devices.
+
+If the external camera is not available at index `1`, try another index such as `2` or `3`.
+
+## Architecture
+
+The webcam is captured directly by OpenCV on the machine running VisionFlow. Frames are encoded as JPEG and continuously returned by FastAPI using `multipart/x-mixed-replace`. This makes the stream directly viewable in a browser without a separate frontend or WebSocket client.
+
+Face detection can be enabled by using the `_faces` endpoint. The existing OpenCV SSD face detection model in `models/` is reused for this processing pipeline.
