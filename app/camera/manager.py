@@ -91,8 +91,6 @@ class CameraSession:
 
         while self.running:
             try:
-                with self.lock:
-                    self.state = "starting" if self.capture is None else "running"
                 if self.capture is None or not self.capture.isOpened():
                     self._release_capture()
                     with self.lock:
@@ -137,7 +135,8 @@ class CameraSession:
                     self.last_error = str(exc)
                     self.state = "reconnecting"
                 self._release_capture()
-                time.sleep(self.config.reconnect_delay)
+                if self.running:
+                    time.sleep(self.config.reconnect_delay)
 
         self._release_capture()
 
@@ -171,8 +170,15 @@ class CameraManager:
         self._sessions: dict[str, CameraSession] = {}
         self._lock = threading.RLock()
 
-    def add(self, name: str, camera_type: CameraType, source: str, **kwargs) -> CameraSession:
-        camera_id = str(uuid.uuid4())
+    def add(
+        self,
+        name: str,
+        camera_type: CameraType,
+        source: str,
+        camera_id: str | None = None,
+        **kwargs,
+    ) -> CameraSession:
+        camera_id = camera_id or str(uuid.uuid4())
         config = CameraConfig(
             id=camera_id,
             name=name,
