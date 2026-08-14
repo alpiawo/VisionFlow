@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/banner.svg" alt="VisionFlow - Smart Camera Streaming Platform" width="100%" />
+  <img src="assets/vision-flow.png" alt="VisionFlow - Smart Camera Streaming Platform" width="100%" />
 </p>
 
 <p align="center">
