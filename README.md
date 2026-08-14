@@ -1,6 +1,20 @@
-# VisionFlow
+<p align="center">
+  <img src="assets/banner.svg" alt="VisionFlow - Smart Camera Streaming Platform" width="100%" />
+</p>
+
+<p align="center">
+  <strong>Smart camera streaming platform built with FastAPI and OpenCV.</strong>
+</p>
+
+<p align="center">
+  Multi-source camera input · Camera lifecycle management · Real-time processing · MJPEG streaming
+</p>
+
+## Overview
 
 VisionFlow is a FastAPI + OpenCV camera streaming service designed around multiple camera sources, lifecycle management, live MJPEG streaming, and optional real-time processing.
+
+The project currently supports local laptop webcams, external USB webcams, and RTSP cameras while keeping camera management separate from the HTTP streaming layer.
 
 ## Features
 
@@ -32,6 +46,8 @@ project-root/
 │   └── webcam/
 │       ├── __init__.py
 │       └── camera.py
+├── assets/
+│   └── banner.svg
 ├── models/
 ├── requirements.txt
 └── README.md
@@ -183,3 +199,16 @@ FastAPI MJPEG Stream
 ```
 
 The camera manager is intentionally independent from the HTTP endpoint. This makes it possible to add recording, snapshots, WebSocket telemetry, additional processing pipelines, and a frontend without coupling those features directly to OpenCV capture code.
+
+## Roadmap
+
+- Snapshot and image capture
+- Video recording
+- WebSocket telemetry
+- Additional processing pipelines
+- Multi-camera dashboard
+- Authentication and access control
+
+## License
+
+This project is licensed under the MIT License.
